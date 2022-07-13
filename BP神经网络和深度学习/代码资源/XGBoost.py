@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 
 #1导入数据
 datasets = pd.read_csv('site_arima.csv')
-dataset = datasets.iloc[:,1].values.reshape(-1,1)
+dataset = datasets.iloc[:, 1].values.reshape(-1, 1)
 
 #2切片
 step_size = 15  # time_step = 15
