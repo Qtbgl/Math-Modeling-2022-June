@@ -21,7 +21,7 @@ step_size = 15  # time_step = 15
 data_input = np.zeros((len(dataset) - step_size, step_size))
 for i in range(len(dataset)-step_size):
     data_input[i, :] = dataset[i:step_size + i, 0]
-data_label = dataset[step_size:,0]
+data_label = dataset[step_size:, 0]
 
 #3划分数据集
 test_number = 10
