@@ -30,14 +30,15 @@ Y_train = data_label[: -test_number]
 X_test = data_seg[-test_number:]
 Y_test = data_label[-test_number:]
 
-# 搭建预测模型
-inputs = tf.keras.Input(shape=(15,))
-x = tf.keras.layers.Dense(28, activation='relu', name='dense_1')(inputs)  # 28 = 15 * 2 - 2
-x1 = tf.keras.layers.Dense(28, activation='relu', name='dense_2')(x)
-x2 = tf.keras.layers.Dense(28, activation='relu', name='dense_3')(x1)
-x3 = tf.keras.layers.Dense(28, activation='relu', name='dense_4')(x2)
-x4 = tf.keras.layers.Dense(1, name='dense_5')(x3)
-model = tf.keras.Model(inputs=inputs, outputs=x4)
+# 张量转化
+X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+
+# 构建模型
+inputs = tf.keras.Input(shape=(X_train.shape[1], X_train.shape[2]))
+x = tf.keras.layers.SimpleRNN(units=28, name='rnn_1')(inputs)  # 28 = 15 * 2 - 2
+x1 = tf.keras.layers.Dense(1)(x)
+model = tf.keras.Model(inputs=inputs, outputs=x1)
 
 # 配置模型优化器、损失函数
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
@@ -64,3 +65,4 @@ plt.figure(1)
 plt.plot(Y_test)
 plt.plot(Y_pre, color='red')
 plt.show()
+
