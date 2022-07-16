@@ -433,23 +433,66 @@ plt.show()
 
 `pdq`参数缺点后，ARIMA模型就定阶了。
 
+> python中使用ARIMA需要的模块、函数
+>
+> ```python
+> import matplotlib.pyplot as plt
+> import pandas as pd
+> import statsmodels.api as sm
+> from statsmodels.tsa.arima.model import ARIMA
+> from statsmodels.tsa.stattools import adfuller as ADF
+> ```
+
 ##### 参数估计
 
 实际例子，
 
 1. 先导入数据
 
+   ```python
+   dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
+   df = pd.read_csv('site_arima.csv', parse_dates=['time'], 
+                    index_col='time', date_parser=dateparse)
+   seq_train = df['2018-1-1':'2018-12-23']
+   seq_test = df['2018-12-24':'2018-12-31']
+   ```
+
    ![1657898896175](1657898896175.png)
 
 2. 平稳性检验
 
-   首先检验原始序列的平稳性。如果原始序列不平稳,则进行差分，直到差分后数据变得平稳。注：每差分一次序列长度会少1。检验结果输出绘图如下：
+   首先检验原始序列的平稳性。如果原始序列不平稳，则进行差分，直到差分后数据变得平稳。
+
+   > timeseries 是输入的时间序列，类型DataFrame有差分方法diff()
+   > 
+   > ```python
+   > timeseries_diff1 = timeseries.diff(1)
+   > timeseries_diff2 = timeseries_diff1.diff(1)
+   > 
+   > timeseries_diff1 = timeseries_diff1.fillna(0)
+   > timeseries_diff2 = timeseries_diff2.fillna(0)
+   > 
+   > print('timeseries_adf : ', ADF(timeseries['data'].tolist()))
+   > print('timeseries_diff1_adf : ', ADF(timeseries_diff1['data'].tolist()))
+   > print('timeseries_diff2_adf : ', ADF(timeseries_diff2['data'].tolist()))
+   > ```
+
+   注：每差分一次序列长度会少1。检验结果输出绘图如下：
+
+   ```python
+   plt.figure(figsize=(12, 8))
+   plt.plot(timeseries, label='Original', color='blue')
+   plt.plot(timeseries_diff1, label='Diff1', color='red')
+   plt.plot(timeseries_diff2, label='Diff2', color='purple')
+   plt.legend(loc='best')
+   plt.show()
+   ```
 
    ![1657899115428](1657899115428.png)
 
 3. `确定 p q` 阶数
 
-   通常而言，可以通过自相关函数（ACF）和偏自相关函数（PACF）确定`p`和`q`。具体方法如下：
+   通常而言，可以通过自相关函数（ACF）和偏自相关函数（PACF）确定`p`和`q`。方法大致如下：
 
    ![1657899693969](1657899693969.png)
 
@@ -457,13 +500,40 @@ plt.show()
 
    严格来看，ACF和PACF显示存在一定程度的拖尾和振荡。从而并不能直观的看出p和q的值。
 
-   ![1657900004084](1657900004084.png)
-
+   > ACF和PACF函数，以及绘制结果。
+   >
+   > ```python
+   > def auto_correlation(timeseries, lags):
+   > fig = plt.figure(figsize=(12, 8))
+   > ax1 = fig.add_subplot(211)
+   > ax2 = fig.add_subplot(212)
+   > sm.graphics.tsa.plot_acf(timeseries, lags=lags, ax=ax1)
+   > sm.graphics.tsa.plot_pacf(timeseries, lags=lags, ax=ax2)
+   > plt.show()
+   > ```
+   >
+   > 传入差分后平稳的时间序列：
+   >
+   > ```python
+   > auto_correlation(seq_train_diff, 20)
+   > ```
+   > ![1657900004084](1657900004084.png)
+   
+   虽然ACF和PACF为我们提供了 **选择模型参数的参考依据**，但是一般实际情况中，我们总会需要通过模型训练效果确定最终采用的参数值。
+   
+   ARMA模型中，我们通常采用 **AIC法则**（赤池信息准则，AIC=2k-2ln(L)， k为模型参数个数，n为样本数量，L为似然函数） 。AIC鼓励数据拟合的有良性但是尽量避免出现过拟合的情况。
+   
+   ```python
+   # 通过aic准则，估计p,q
+   trend_evaluate = sm.tsa.arma_order_select_ic(seq_train_diff, ic=['aic'], trend='n', max_ar=4, max_ma=4)
+   print('calculate AIC', trend_evaluate.aic_min_order)
+   ```
+   
+   输出 `calculate AIC (2, 4)` 即 `p,q = (2, 4)`
+   
    
 
-   虽然ACF和PACF为我们提供了 **选择模型参数的参考依据**，但是一般实际情况中，我们总会需要通过模型训练效果确定最终采用的参数值。
 
-   在ARMA模型中，我们通常采用 **AIC法则**（赤池信息准则，AIC=2k-2ln(L)， k为模型参数个数，n为样本数量，L为似然函数） 。AIC鼓励数据拟合的有良性但是尽量避免出现过拟合的情况。
 
 ##### 构建预测模型
 
@@ -471,11 +541,45 @@ plt.show()
 
 ![1657900550800](1657900550800.png)
 
-进行预测：通过训练完成的模型对未来8天进行预测，并可视化预测结果。
+> 实际成功运行的代码如下：*（直播课件中的代码是 2020年的，ARIMA的一些模块和函数已经不支持了。）*
+>
+> ```python
+> # 序列模型训练
+> def arima_model(timeseries, order):
+>  model = ARIMA(timeseries, order=order)
+>  return model.fit()
+> 
+> model = arima_model(seq_train, (2, 1, 4))
+> ```
+>
+> 注：seq_train 是原始序列不用差分，已经传入order=(p, d, q)参数在模型示例化时会处理。
+
+##### 预测未来8天
+
+通过训练完成的模型对未来8天进行预测，并可视化预测结果。
 
 ![1657900718702](1657900718702.png)
 
 ![1657900732832](1657900732832.png)
 
 这张图说明 ARIMA 模型还是适合短期预测，长期效果不行。
+
+> 实际成功运行的代码如下：
+>
+> ```python
+> # 作为期8天的预测
+> pred_day = 8
+> y_forecasted = model.forecast(steps=pred_day, alpha=0.01)
+> y_truth = seq_test['2018-12-24':'2018-12-31']
+> 
+> plt.figure(2)
+> plt.plot(y_forecasted, color='red', label='predict_seq')
+> plt.plot(y_truth, color='blue', label='seq_test')
+> plt.legend()
+> plt.show()
+> ```
+>
+> 即 y_forecasted 不要试图切出一列，直接输出否则实际切出的是一行？
+>
+> ![1657947425187](1657947425187.png)
 
