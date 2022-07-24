@@ -583,3 +583,12 @@ plt.show()
 >
 > ![1657947425187](1657947425187.png)
 
+### 参考部分
+
+##### ARIMA 
+
+[Python时间序列--ARIMA模型参数选择（六）_jaffe_wei的博客-CSDN博客_arima模型选择](https://blog.csdn.net/jaffe507/article/details/105835616)
+
+[statsmodels.tsa.arima.model.ARIMA用户手册（中文）（statsmodels包）_comli_cn的博客-CSDN博客_statsmodels.tsa](https://blog.csdn.net/comli_cn/article/details/109644756)
+
+[“利用ARIMA模型对时间序列进行分析的经典案例（详细代码）”一文中会遇到的问题总结（二）_小白掌柜的博客-CSDN博客_arima模型预测实例](https://blog.csdn.net/weixin_41013322/article/details/119983639?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_title~default-0-119983639-blog-124058956.pc_relevant_sortByStrongTime&spm=1001.2101.3001.4242.1&utm_relevant_index=3)
